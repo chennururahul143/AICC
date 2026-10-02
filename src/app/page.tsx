@@ -1,69 +1,151 @@
-import Image from "next/image";
+import Link from "next/link";
 
-export default function Home() {
+import { ItemRow } from "@/components/item-row";
+import { ProvenanceBadge } from "@/components/provenance-badge";
+import { RelationshipChips } from "@/components/relationship-chips";
+import { SectionHeader } from "@/components/section-header";
+import {
+  getBriefing,
+  listConnections,
+  listDevelopments,
+  listEntries,
+  listTopics,
+  sourceSections,
+} from "@/lib/data";
+import { formatDate } from "@/lib/format";
+
+export default function OverviewPage() {
+  const briefing = getBriefing();
+  const developments = listDevelopments();
+  const connections = listConnections();
+  const topics = listTopics();
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert h-5 w-[100px]"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
+    <div className="flex flex-col gap-10">
+      <section aria-labelledby="briefing-title" className="border border-border p-5 md:p-6">
+        <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
+          Intelligence briefing · {formatDate(briefing.date)}
+        </p>
+        <div className="mt-3">
+          <ProvenanceBadge provenance={briefing.provenance} />
+        </div>
+        <h1 id="briefing-title" className="mt-3 max-w-3xl text-2xl font-semibold tracking-tight">
+          {briefing.headline}
+        </h1>
+        <p className="mt-3 max-w-3xl text-sm leading-6">{briefing.summary}</p>
+        <ol className="mt-5 flex max-w-3xl flex-col gap-3">
+          {briefing.points.map((point) => (
+            <li key={point.text} className="border-l-2 border-border pl-3">
+              <ProvenanceBadge provenance={point.provenance} />
+              <p className="mt-1 text-sm leading-6">{point.text}</p>
+            </li>
+          ))}
+        </ol>
+      </section>
+
+      <section aria-labelledby="developments-title">
+        <SectionHeader
+          id="developments-title"
+          eyebrow="02"
+          title="Important developments"
+          description="Why a sample item is worth opening, with the entities it connects to."
         />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the{" "}
-            <code className="rounded bg-black/[.06] px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-white/[.08]">
-              page.tsx
-            </code>{" "}
-            file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+        <div className="flex flex-col gap-5">
+          {developments.map((item) => (
+            <article key={item.id} className="border-b border-border pb-5">
+              <div className="mb-2 flex flex-wrap items-center gap-2">
+                <ProvenanceBadge provenance={item.provenance} />
+                <p className="text-xs text-muted-foreground">{formatDate(item.date)}</p>
+              </div>
+              <h3 className="text-sm font-medium">{item.title}</h3>
+              <p className="mt-1 max-w-3xl text-sm leading-6 text-muted-foreground">
+                {item.whyItMatters}
+              </p>
+              <div className="mt-3">
+                <RelationshipChips related={item.related} />
+              </div>
+            </article>
+          ))}
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert h-[14px] w-4"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+      </section>
+
+      <section aria-labelledby="connections-title">
+        <SectionHeader
+          id="connections-title"
+          eyebrow="03"
+          title="Related entities"
+          description="Clusters you can walk through. Each chip opens a sample item."
+        />
+        <div className="grid gap-4 md:grid-cols-3">
+          {connections.map((group) => (
+            <article key={group.id} className="border border-border p-3">
+              <h3 className="text-sm font-medium">{group.title}</h3>
+              <div className="mt-2">
+                <ProvenanceBadge provenance={group.provenance} />
+              </div>
+              <p className="mt-2 text-sm text-muted-foreground">{group.note}</p>
+              <div className="mt-3">
+                <RelationshipChips related={group.related} />
+              </div>
+            </article>
+          ))}
         </div>
-      </main>
+      </section>
+
+      <section aria-labelledby="topics-title">
+        <SectionHeader
+          id="topics-title"
+          eyebrow="04"
+          title="Emerging topics"
+          description="One-line signals from this sample set."
+          href="/explore"
+          action="Explore"
+        />
+        <ul className="grid gap-2 sm:grid-cols-2">
+          {topics.map((topic) => (
+            <li key={topic.id}>
+              <Link
+                href={`/explore/${topic.id}`}
+                className="block border border-border px-3 py-2 hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              >
+                <span className="text-sm font-medium">{topic.name}</span>
+                <span className="mt-1 block text-sm text-muted-foreground">{topic.signal}</span>
+              </Link>
+            </li>
+          ))}
+        </ul>
+      </section>
+
+      <section aria-labelledby="sources-title" className="border-t border-border pt-6">
+        <SectionHeader
+          id="sources-title"
+          eyebrow="05"
+          title="Source content"
+          description="Short pointers into the sample lists. This is not the briefing."
+        />
+        <div className="grid gap-6 md:grid-cols-2">
+          {sourceSections.map((section) => (
+            <div key={section.kind}>
+              <div className="mb-1 flex items-center justify-between">
+                <h3 className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
+                  {section.label}
+                </h3>
+                <Link
+                  href={section.href}
+                  className="text-xs text-muted-foreground underline-offset-4 hover:underline"
+                >
+                  View all
+                </Link>
+              </div>
+              {listEntries(section.kind)
+                .slice(0, 2)
+                .map((entry) => (
+                  <ItemRow key={entry.id} entry={entry} compact />
+                ))}
+            </div>
+          ))}
+        </div>
+      </section>
     </div>
   );
 }
