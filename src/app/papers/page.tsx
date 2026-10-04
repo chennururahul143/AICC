@@ -1,16 +1,19 @@
 import type { Metadata } from "next";
 
 import { CollectionView } from "@/components/collection-view";
-import { listEntries } from "@/lib/data";
+import { listEntries, readListFilters } from "@/lib/data";
 
 export const metadata: Metadata = { title: "Research Papers" };
 
-export default function PapersPage() {
+export default async function PapersPage(props: PageProps<"/papers">) {
+  const filters = readListFilters(await props.searchParams);
   return (
     <CollectionView
       title="Research Papers"
-      description="Sample papers and notes, linked to the models and repos that cite them."
-      items={listEntries("paper")}
+      description="Collected papers from arXiv and the sample notes. Collected excerpts are short snippets, not the paper."
+      items={await listEntries("paper")}
+      topic={filters.topic}
+      provenance={filters.provenance}
     />
   );
 }

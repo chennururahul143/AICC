@@ -1,6 +1,8 @@
 import Link from "next/link";
 
+import { DashboardLayout } from "@/components/dashboard-layout";
 import { ItemRow } from "@/components/item-row";
+import { OverviewBriefing } from "@/components/overview-briefing";
 import { ProvenanceBadge } from "@/components/provenance-badge";
 import { RelationshipChips } from "@/components/relationship-chips";
 import { SectionHeader } from "@/components/section-header";
@@ -14,35 +16,36 @@ import {
 } from "@/lib/data";
 import { formatDate } from "@/lib/format";
 
-export default function OverviewPage() {
-  const briefing = getBriefing();
-  const developments = listDevelopments();
-  const connections = listConnections();
-  const topics = listTopics();
+export default async function OverviewPage() {
+  const [briefing, developments, connections, topics, sourceLists] = await Promise.all([
+    getBriefing(),
+    listDevelopments(),
+    listConnections(),
+    listTopics(),
+    Promise.all(
+      sourceSections.map(async (section) => ({
+        ...section,
+        items: (await listEntries(section.kind)).slice(0, 2),
+      })),
+    ),
+  ]);
 
   return (
-    <div className="flex flex-col gap-10">
+    <DashboardLayout
+      items={[
+        {
+          id: "briefing",
+          title: "Intelligence briefing",
+          children: (
       <section aria-labelledby="briefing-title" className="border border-border p-5 md:p-6">
-        <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
-          Intelligence briefing · {formatDate(briefing.date)}
-        </p>
-        <div className="mt-3">
-          <ProvenanceBadge provenance={briefing.provenance} />
-        </div>
-        <h1 id="briefing-title" className="mt-3 max-w-3xl text-2xl font-semibold tracking-tight">
-          {briefing.headline}
-        </h1>
-        <p className="mt-3 max-w-3xl text-sm leading-6">{briefing.summary}</p>
-        <ol className="mt-5 flex max-w-3xl flex-col gap-3">
-          {briefing.points.map((point) => (
-            <li key={point.text} className="border-l-2 border-border pl-3">
-              <ProvenanceBadge provenance={point.provenance} />
-              <p className="mt-1 text-sm leading-6">{point.text}</p>
-            </li>
-          ))}
-        </ol>
+        <OverviewBriefing defaultBriefing={briefing} />
       </section>
-
+          ),
+        },
+        {
+          id: "developments",
+          title: "Important developments",
+          children: (
       <section aria-labelledby="developments-title">
         <SectionHeader
           id="developments-title"
@@ -68,7 +71,12 @@ export default function OverviewPage() {
           ))}
         </div>
       </section>
-
+          ),
+        },
+        {
+          id: "connections",
+          title: "Related entities",
+          children: (
       <section aria-labelledby="connections-title">
         <SectionHeader
           id="connections-title"
@@ -76,7 +84,7 @@ export default function OverviewPage() {
           title="Related entities"
           description="Clusters you can walk through. Each chip opens a sample item."
         />
-        <div className="grid gap-4 md:grid-cols-3">
+        <div className="grid gap-4 @min-[40rem]:grid-cols-3">
           {connections.map((group) => (
             <article key={group.id} className="border border-border p-3">
               <h3 className="text-sm font-medium">{group.title}</h3>
@@ -91,17 +99,22 @@ export default function OverviewPage() {
           ))}
         </div>
       </section>
-
+          ),
+        },
+        {
+          id: "topics",
+          title: "Emerging topics",
+          children: (
       <section aria-labelledby="topics-title">
         <SectionHeader
           id="topics-title"
           eyebrow="04"
           title="Emerging topics"
-          description="One-line signals from this sample set."
+          description="One-line signals from this sample set. Explore also lists collected items assigned to the topic."
           href="/explore"
           action="Explore"
         />
-        <ul className="grid gap-2 sm:grid-cols-2">
+        <ul className="grid gap-2 @min-[24rem]:grid-cols-2">
           {topics.map((topic) => (
             <li key={topic.id}>
               <Link
@@ -115,16 +128,21 @@ export default function OverviewPage() {
           ))}
         </ul>
       </section>
-
+          ),
+        },
+        {
+          id: "sources",
+          title: "Source content",
+          children: (
       <section aria-labelledby="sources-title" className="border-t border-border pt-6">
         <SectionHeader
           id="sources-title"
           eyebrow="05"
           title="Source content"
-          description="Short pointers into the sample lists. This is not the briefing."
+          description="Short pointers into the catalog. This is not the briefing."
         />
-        <div className="grid gap-6 md:grid-cols-2">
-          {sourceSections.map((section) => (
+        <div className="grid gap-6 @min-[32rem]:grid-cols-2">
+          {sourceLists.map((section) => (
             <div key={section.kind}>
               <div className="mb-1 flex items-center justify-between">
                 <h3 className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
@@ -137,15 +155,16 @@ export default function OverviewPage() {
                   View all
                 </Link>
               </div>
-              {listEntries(section.kind)
-                .slice(0, 2)
-                .map((entry) => (
-                  <ItemRow key={entry.id} entry={entry} compact />
-                ))}
+              {section.items.map((entry) => (
+                <ItemRow key={entry.id} entry={entry} compact />
+              ))}
             </div>
           ))}
         </div>
       </section>
-    </div>
+          ),
+        },
+      ]}
+    />
   );
 }

@@ -17,8 +17,9 @@ import {
   Waypoints,
 } from "lucide-react";
 
+import { AccountMenu } from "@/components/account-menu";
+import { SearchAutocomplete } from "@/components/search-autocomplete";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import {
   Sheet,
   SheetContent,
@@ -134,19 +135,11 @@ function ShellFrame({ children }: { children: React.ReactNode }) {
           >
             <Menu />
           </Button>
-          <form action="/search" role="search" className="min-w-0 flex-1">
-            <label htmlFor="q" className="sr-only">
-              Search sample intelligence
-            </label>
-            <Input
-              id="q"
-              name="q"
-              type="search"
-              placeholder="Search sample data"
-              className="max-w-md"
-            />
-          </form>
-          <BookmarkCount />
+          <SearchAutocomplete />
+          <div className="ml-auto flex items-center gap-2">
+            <BookmarkCount />
+            <AccountMenu />
+          </div>
         </header>
         <div className="border-b border-border bg-muted/40 px-4 py-2 text-sm text-muted-foreground md:px-6">
           Sample data. These excerpts are synthetic and are not live or verified intelligence.

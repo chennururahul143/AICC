@@ -8,13 +8,13 @@ export async function generateMetadata(
   props: PageProps<"/companies/[id]">,
 ): Promise<Metadata> {
   const { id } = await props.params;
-  const entry = getEntry("company", id);
+  const entry = await getEntry("company", id);
   return { title: entry?.title ?? "AI Companies" };
 }
 
 export default async function CompanyDetailPage(props: PageProps<"/companies/[id]">) {
   const { id } = await props.params;
-  const entry = getEntry("company", id);
+  const entry = await getEntry("company", id);
   if (!entry) notFound();
   return <EntityDetail entry={entry} />;
 }

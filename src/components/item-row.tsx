@@ -30,7 +30,12 @@ export function ItemRow({
             {entry.title}
           </Link>
         </h3>
-        {compact ? null : (
+        {compact ? null : entry.interpretation ? (
+          <div className="mt-1">
+            <ProvenanceBadge provenance={entry.interpretation.provenance} />
+            <p className="mt-1 text-sm leading-5">{entry.interpretation.summary}</p>
+          </div>
+        ) : (
           <p className="mt-1 text-sm leading-5 text-muted-foreground">{entry.excerpt}</p>
         )}
       </div>
