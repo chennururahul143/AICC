@@ -2,51 +2,37 @@
 
 import { useCallback, useSyncExternalStore } from "react";
 
-import type { Bookmark, EntityKind } from "@/lib/types";
-
-const STORAGE_KEY = "aicc-bookmarks";
-const CHANGE_EVENT = "aicc-bookmarks";
+import {
+  BOOKMARKS_EVENT,
+  readBookmarks,
+  writeBookmarks,
+} from "@/lib/local-workspace";
+import type { EntityKind } from "@/lib/types";
 
 let cachedRaw: string | null = null;
-let cachedItems: Bookmark[] = [];
-const serverItems: Bookmark[] = [];
+let cachedItems: ReturnType<typeof readBookmarks> = [];
+const serverItems: typeof cachedItems = [];
 
-function readBookmarks(): Bookmark[] {
-  const raw = localStorage.getItem(STORAGE_KEY);
+function readCached(): typeof cachedItems {
+  if (typeof window === "undefined") return serverItems;
+  const raw = localStorage.getItem("aicc-bookmarks");
   if (raw === cachedRaw) return cachedItems;
   cachedRaw = raw;
-  if (!raw) {
-    cachedItems = [];
-    return cachedItems;
-  }
-  try {
-    const parsed = JSON.parse(raw) as Bookmark[];
-    cachedItems = Array.isArray(parsed) ? parsed : [];
-  } catch {
-    cachedItems = [];
-  }
+  cachedItems = readBookmarks();
   return cachedItems;
 }
 
-function writeBookmarks(items: Bookmark[]) {
-  const raw = JSON.stringify(items);
-  localStorage.setItem(STORAGE_KEY, raw);
-  cachedRaw = raw;
-  cachedItems = items;
-  window.dispatchEvent(new Event(CHANGE_EVENT));
-}
-
 function subscribe(onStoreChange: () => void) {
-  window.addEventListener(CHANGE_EVENT, onStoreChange);
+  window.addEventListener(BOOKMARKS_EVENT, onStoreChange);
   window.addEventListener("storage", onStoreChange);
   return () => {
-    window.removeEventListener(CHANGE_EVENT, onStoreChange);
+    window.removeEventListener(BOOKMARKS_EVENT, onStoreChange);
     window.removeEventListener("storage", onStoreChange);
   };
 }
 
 export function useBookmarks() {
-  const items = useSyncExternalStore(subscribe, readBookmarks, () => serverItems);
+  const items = useSyncExternalStore(subscribe, readCached, () => serverItems);
 
   const has = useCallback(
     (kind: EntityKind, id: string) => items.some((item) => item.kind === kind && item.id === id),

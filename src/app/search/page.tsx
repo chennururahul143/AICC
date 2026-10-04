@@ -9,14 +9,14 @@ export const metadata: Metadata = { title: "Search" };
 export default async function SearchPage(props: PageProps<"/search">) {
   const params = await props.searchParams;
   const query = typeof params.q === "string" ? params.q : "";
-  const results = searchEntries(query);
+  const results = await searchEntries(query);
 
   return (
     <section>
       <SectionHeader
         heading="h1"
         title="Search"
-        description="Search runs over the sample set in this browser."
+        description="Search runs over the sample set from the API."
       />
       {query.trim() === "" ? (
         <p className="text-sm text-muted-foreground">Enter a term in the header search.</p>

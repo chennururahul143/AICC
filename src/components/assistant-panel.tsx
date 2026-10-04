@@ -1,12 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { ProvenanceBadge } from "@/components/provenance-badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { findAssistantSample, listAssistantSamples } from "@/lib/data";
-import type { AssistantSource, Provenance } from "@/lib/types";
+import { askAssistant, listAssistantSamples } from "@/lib/data";
+import type { AssistantSample, AssistantSource, Provenance } from "@/lib/types";
 
 type Message = {
   id: string;
@@ -17,10 +17,8 @@ type Message = {
   insufficient?: boolean;
 };
 
-const samples = listAssistantSamples();
-
 const fallback = {
-  text: "This sample assistant does not have enough evidence in the mock dataset to answer that. It only has prepared responses for the suggested questions.",
+  text: "The API could not be reached.",
   provenance: "unverified" as const,
   insufficient: true,
   sources: [] as AssistantSource[],
@@ -29,19 +27,37 @@ const fallback = {
 export function AssistantPanel() {
   const [draft, setDraft] = useState("");
   const [messages, setMessages] = useState<Message[]>([]);
+  const [samples, setSamples] = useState<AssistantSample[]>([]);
+  const [loading, setLoading] = useState(false);
 
-  function ask(question: string) {
+  useEffect(() => {
+    let active = true;
+    listAssistantSamples()
+      .then((items) => {
+        if (active) setSamples(items);
+      })
+      .catch(() => {
+        if (active) setSamples([]);
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  async function ask(question: string) {
     const trimmed = question.trim();
-    if (!trimmed) return;
-    const sample = findAssistantSample(trimmed);
-    const answer = sample
-      ? {
-          text: sample.answer,
-          provenance: sample.provenance,
-          sources: sample.sources,
-          insufficient: sample.insufficient,
-        }
-      : fallback;
+    if (!trimmed || loading) return;
+    setLoading(true);
+    const answer = await askAssistant(trimmed).then(
+      (sample) => ({
+        text: sample.answer,
+        provenance: sample.provenance,
+        sources: sample.sources,
+        insufficient: sample.insufficient,
+      }),
+      () => fallback,
+    );
+    setLoading(false);
 
     setMessages((current) => [
       ...current,
@@ -61,12 +77,13 @@ export function AssistantPanel() {
   return (
     <section className="max-w-3xl">
       <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
-        Sample assistant
+        Research assistant
       </p>
       <h1 className="mt-2 text-xl font-semibold tracking-tight">AI Research Assistant</h1>
       <p className="mt-2 text-sm text-muted-foreground">
-        Prepared answers over this sample set. This screen does not call a model. If the set
-        lacks evidence, the reply says so.
+        Answers use snippets and summaries stored in the catalog. Suggested questions keep their
+        prepared sample replies. Other questions retrieve matching items and cite them. If evidence
+        is thin, the reply says so.
       </p>
 
       <div className="mt-4 flex flex-col gap-2">
@@ -87,7 +104,7 @@ export function AssistantPanel() {
         {messages.map((message) => (
           <article key={message.id} className="border-b border-border pb-4">
             <p className="text-xs text-muted-foreground">
-              {message.role === "user" ? "You" : "Sample assistant"}
+              {message.role === "user" ? "You" : "Assistant"}
             </p>
             <p className="mt-1 text-sm leading-6">{message.text}</p>
             {message.role === "assistant" && message.provenance ? (
@@ -121,15 +138,18 @@ export function AssistantPanel() {
         }}
       >
         <label htmlFor="assistant-question" className="sr-only">
-          Ask a question about the sample set
+          Ask a question about the catalog
         </label>
         <Input
           id="assistant-question"
           value={draft}
           onChange={(event) => setDraft(event.target.value)}
-          placeholder="Ask about the sample set"
+          placeholder="Ask about items in the catalog"
+          disabled={loading}
         />
-        <Button type="submit">Ask</Button>
+        <Button type="submit" disabled={loading}>
+          {loading ? "Thinking…" : "Ask"}
+        </Button>
       </form>
     </section>
   );

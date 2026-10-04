@@ -4,14 +4,16 @@ import { kindLabel } from "@/lib/format";
 import { resolveRef } from "@/lib/data";
 import type { EntityRef } from "@/lib/types";
 
-export function RelationshipChips({ related }: { related: EntityRef[] }) {
-  const items = related
-    .map((ref) => {
-      const resolved = resolveRef(ref);
-      if (!resolved) return null;
-      return { ...resolved, kind: ref.kind, id: ref.id };
-    })
-    .filter((item) => item !== null);
+export async function RelationshipChips({ related }: { related: EntityRef[] }) {
+  const items = (
+    await Promise.all(
+      related.map(async (ref) => {
+        const resolved = await resolveRef(ref);
+        if (!resolved) return null;
+        return { ...resolved, kind: ref.kind, id: ref.id };
+      }),
+    )
+  ).filter((item) => item !== null);
 
   if (items.length === 0) return null;
 
